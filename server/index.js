@@ -1,4 +1,4 @@
-require("dotenv").config();
+equire("dotenv").config();
 
 const express = require("express");
 const path = require("path");
@@ -62,13 +62,7 @@ app.get("/api/fixtures", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error: "Erreur serveur.",
-      details: error.message
-    });
-  }
-});
-
-/**
+      error: "Erreur serveu
  * Route principale
  */
 app.get("*", (req, res) => {
@@ -76,5 +70,4 @@ app.get("*", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`K2L-WIN v2 démarré sur le port ${PORT}`);
-});
+  console.log
