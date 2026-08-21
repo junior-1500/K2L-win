@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>K2L-WIN v2</title>
+  <title>K2L-WIN</title>
 
   <style>
     * {
@@ -21,7 +21,7 @@
     header {
       background: #111827;
       color: white;
-      padding: 22px 16px;
+      padding: 20px;
       text-align: center;
     }
 
@@ -32,63 +32,219 @@
 
     header p {
       margin: 8px 0 0;
-      opacity: 0.8;
+      color: #cbd5e1;
     }
 
-    main {
+    .container {
       max-width: 900px;
       margin: auto;
       padding: 20px;
     }
 
-    .panel {
+    .card {
       background: white;
-      border-radius: 14px;
+      border-radius: 15px;
       padding: 20px;
       margin-bottom: 20px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 13px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      margin-bottom: 15px;
+      font-size: 16px;
     }
 
     button {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px;
       background: #16a34a;
       color: white;
-      font-size: 16px;
+      border: none;
       font-weight: bold;
       cursor: pointer;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
-
-    #status {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 8px;
-      background: #eef2ff;
+    button:hover {
+      background: #15803d;
     }
 
     .match {
       border: 1px solid #e5e7eb;
       border-radius: 12px;
-      padding: 16px;
+      padding: 15px;
       margin-top: 12px;
-      background: #fff;
     }
 
-    .match-title {
+    .teams {
       font-size: 18px;
       font-weight: bold;
       margin-bottom: 8px;
     }
 
-    .match-info {
-      color: #6b7280;
-      font-size: 14px;
+    .prediction {
+      color: #16a34a;
+      font-weight: bold;
     }
 
-    .
+    .confidence {
+      color: #555;
+      margin-top: 5px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 15px;
+      color: #666;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #777;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>⚽ K2L-WIN</h1>
+    <p>Application de pronostics sportifs</p>
+  </header>
+
+  <main class="container">
+
+    <section class="card">
+      <h2>🔎 Rechercher des matchs</h2>
+
+      <label for="league">Compétition</label>
+
+      <select id="league">
+        <option value="all">Toutes les compétitions</option>
+        <option value="football">Football</option>
+      </select>
+
+      <button onclick="loadMatches()">
+        Voir les matchs
+      </button>
+    </section>
+
+    <section class="card">
+      <h2>📊 Matchs et pronostics</h2>
+
+      <div id="matches">
+        <div class="loading">
+          Chargement des matchs...
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    K2L-WIN v2 — Pronostics sportifs
+  </footer>
+
+  <script>
+
+    async function loadMatches() {
+
+      const container = document.getElementById("matches");
+
+      container.innerHTML =
+        '<div class="loading">Chargement...</div>';
+
+      try {
+
+        const response = await fetch("/api/matches");
+
+        if (!response.ok) {
+          throw new Error("Erreur serveur");
+        }
+
+        const matches = await response.json();
+
+        if (!matches || matches.length === 0) {
+
+          container.innerHTML =
+            '<div class="loading">Aucun match disponible.</div>';
+
+          return;
+        }
+
+        container.innerHTML = "";
+
+        matches.forEach(match => {
+
+          const div = document.createElement("div");
+
+          div.className = "match";
+
+          div.innerHTML = `
+            <div class="teams">
+              ${match.home || "Équipe domicile"}
+              -
+              ${match.away || "Équipe extérieure"}
+            </div>
+
+            <div>
+              📅 ${match.date || "Date inconnue"}
+            </div>
+
+            <div class="prediction">
+              🎯 Pronostic :
+              ${match.prediction || "Analyse en cours"}
+            </div>
+
+            <div class="confidence">
+              📈 Confiance :
+              ${match.confidence || "N/A"}
+            </div>
+          `;
+
+          container.appendChild(div);
+
+        });
+
+      } catch (error) {
+
+        container.innerHTML = `
+          <div class="error">
+            Impossible de récupérer les matchs.
+            <br><br>
+            Vérifie que le serveur K2L-WIN est démarré.
+          </div>
+        `;
+
+        console.error(error);
+      }
+    }
+
+    window.addEventListener("load", loadMatches);
+
+  </script>
+
+</body>
+</html>
