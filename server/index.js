@@ -1,73 +1,115 @@
-equire("dotenv").config();
+require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SPORTMONKS_API_TOKEN = process.env.SPORTMONKS_API_TOKEN;
+const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_TOKEN;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
 
-/**
- * Vérification du serveur
- */
-app.get("/api/status", (req, res) => {
+// Servir le site web
+app.use(express.static(path.join(__dirname, "../public")));
+
+// Fonction pour appeler Sportmonks
+async function sportmonks(endpoint) {
+  if (!SPORTMONKS_TOKEN) {
+    throw new Error("SPORTMONKS_API_TOKEN n'est pas configuré.");
+  }
+
+  const separator = endpoint.includes("?") ? "&" : "?";
+  const url =
+    `https://api.sportmonks.com/v3/football/${endpoint}` +
+    `${separator}api_token=${encodeURIComponent(SPORTMONKS_TOKEN)}`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Sportmonks ${response.status}: ${text}`);
+  }
+
+  return response.json();
+}
+
+// Vérification du serveur
+app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    app: "K2L-WIN v2",
-    sportmonksConfigured: Boolean(SPORTMONKS_API_TOKEN)
+    message: "K2L-WIN API fonctionne",
+    sportmonks: Boolean(SPORTMONKS_TOKEN)
   });
 });
 
-/**
- * Récupération des matchs à venir depuis Sportmonks
- */
-app.get("/api/fixtures", async (req, res) => {
-  if (!SPORTMONKS_API_TOKEN) {
-    return res.status(500).json({
+// Matchs du jour
+app.get("/api/fixtures/today", async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const data = await sportmonks(
+      `fixtures/date/${today}?include=participants`
+    );
+
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
       success: false,
-      error: "SPORTMONKS_API_TOKEN n'est pas configuré."
+      error: error.message
     });
   }
+});
 
+// Matchs d'une date précise
+app.get("/api/fixtures", async (req, res) => {
   try {
-    const url =
-      "https://api.sportmonks.com/v3/football/fixtures" +
-      "?api_token=" +
-      encodeURIComponent(SPORTMONKS_API_TOKEN) +
-      "&include=participants;scores";
+    const date = req.query.date;
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      const text = await response.text();
-
-      return res.status(response.status).json({
+    if (!date) {
+      return res.status(400).json({
         success: false,
-        error: "Erreur lors de la récupération des données Sportmonks.",
-        details: text
+        error: "Le paramètre date est obligatoire. Exemple : ?date=2026-08-21"
       });
     }
 
-    const data = await response.json();
+    const data = await sportmonks(
+      `fixtures/date/${encodeURIComponent(date)}?include=participants`
+    );
 
-    res.json({
-      success: true,
-      data: data.data || []
-    });
+    res.json(data);
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
-      error: "Erreur serveu
- * Route principale
- */
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+      error: error.message
+    });
+  }
 });
 
+// Matchs en direct
+app.get("/api/livescores", async (req, res) => {
+  try {
+    const data = await sportmonks(
+      "livescores?include=participants"
+    );
+
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Toute autre route renvoie le site
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
+// Démarrage
 app.listen(PORT, () => {
-  console.log
+  console.log(`K2L-WIN serveur démarré sur le port ${PORT}`);
+});
