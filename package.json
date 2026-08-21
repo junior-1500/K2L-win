@@ -1,0 +1,14 @@
+{
+  "name": "k2l-win-v2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "K2L-WIN v2 - Sportmonks football API starter",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1"
+  }
+}
